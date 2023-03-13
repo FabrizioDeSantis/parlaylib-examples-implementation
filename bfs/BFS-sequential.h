@@ -3,8 +3,6 @@
 #include <vector>
 using namespace std;
 
-// sequential version of Breadh First Search
-
 struct EdgeSeq {
 	int src, dest;
 };

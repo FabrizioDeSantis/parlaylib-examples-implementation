@@ -4,6 +4,13 @@
 #include <parlay/sequence.h>
 #include <parlay/delayed.h>
 
+// **************************************************************
+// Parallel Breadth First Search
+// The graph is a sequence of sequences of vertex ids, representing
+// the outedges for each vertex.
+// Returns a sequence of sequences, with the ith element corresponding to
+// **************************************************************
+
 struct Node{
   int vertexId;
   int weight;
@@ -17,24 +24,20 @@ int minSum = INT_MAX;
 
 template <typename vertex, typename weighted_graph>
 auto BFSleast(vertex start, vertex destination, const weighted_graph& edges) {
-
-  parlay::sequence<parlay::sequence<Node>> array;
+  
   parlay::sequence<int> path;
 
-  parlay::sequence<Node> frontier(1, {start, 0, {start}});
-  
-  parlay::sequence<parlay::sequence<Node>> frontiers;
+  parlay::sequence<Node> frontier(1, {start, 0, {}});
 
   while (frontier.size() > 0) {
-
-    frontiers.push_back(frontier);
 
     // get out edges of the frontier and flatten
 
     frontier  = parlay::flatten(parlay::map(frontier, [&] (auto v) {
       return parlay::map(edges[v.vertexId], [&] (auto e) {
-        v.predecessors.push_back(e.vertexId);
-        return Node{e.vertexId, e.weight=v.weight+e.weight, v.predecessors};
+        e.predecessors = v.predecessors;
+        e.predecessors.push_back(v.vertexId);
+        return Node{e.vertexId, e.weight=v.weight+e.weight, e.predecessors};
       });
     }));
 
@@ -44,6 +47,7 @@ auto BFSleast(vertex start, vertex destination, const weighted_graph& edges) {
       if(v.vertexId == destination && v.weight < minSum){
         minSum = v.weight;
         path = v.predecessors;
+        path.push_back(destination);
       }
     });
 
